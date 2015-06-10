@@ -43,13 +43,19 @@ and a writeStream
 
 @param  line            data oject    A set of key value pairs {header : value, header : value}
 @param  operation       string        what type of query to perform on the data
-@param  queries         array({})     An array of queries to perform on the line
+@param  operationParam         array({})     An array of queries to perform on the line
 @param  matchCondition  string        ANY = OR, ALL = AND
 @param  outStream       writeStream   An output for the data
 
 @return boolean         lineMatch     success or fail?
 **/
-function queryLines(line, operation, queries, matchCondition, outStream){
+function queryLines(line, operation, operationParam, matchCondition, outStream){
+  var queries = operationParam.queries;
+  var select = operationParam.selectFields;
+
+  if('undefined' !== typeof operationParam.update){
+    var update = operationParam.update;
+  }
   //If the line meets the query(s) then we'll set this to true
   var lineMatch = false;
   //Loop across the queries
@@ -61,12 +67,23 @@ function queryLines(line, operation, queries, matchCondition, outStream){
     //if they are all true
     lineMatch = queries.every(runQuery, line);
   }
-
+  if(operation === 'REMOVE'){
+    lineMatch = !lineMatch;
+  }
   //Assuming the conditions are met, loop across the values and write them to the out file
   if(lineMatch){
-    for(var header in line){
-      outStream.write(line[header] + ', '); //TODO: Trim Trailing ','
+    if(operation === 'UPDATE'){
+      /**
+        Too much looping here hardly seems worth it? TODO :: Research and experiment
+      **/
+      for(var field in update){
+        line[field] = update[field];
+      }
     }
+    select.forEach(function(field){
+      console.log(field);
+      outStream.write(line[field] + ', '); //TODO: Trim Trailing ','
+    });
     outStream.write('\n');
   }
   return lineMatch;
@@ -99,7 +116,7 @@ function processCSV(csvFile, outFile, operation, operationParam){
   //used to give a count of output records
   var count = 0;
   if(operation === 'FETCH' || 'UPDATE' || 'REMOVE'){
-    var matchCondition = operationParam.pop().matchCondition;
+    var matchCondition = operationParam.queries.pop().matchCondition;
   }
   var readStream = fs.createReadStream(csvFile);
   var writeStream = fs.createWriteStream(outFile);
@@ -116,9 +133,17 @@ function processCSV(csvFile, outFile, operation, operationParam){
     var lines = buffer.slice(0, buffer.length-1); //TODO : Set the number to remove to length of line ending (accounting for \r\n)
     //Let's get the headers if we don't already have them - this should only call on the first chunk
     if(headers === false){
-      headers = lines.shift().split(',');
-      //First things first - let's write his to the out file
-      writeStream.write(headers.join(',')+'\n');
+      headers = [];
+      //While we're getting the headers we need to trim white space.
+      lines.shift().split(',').forEach(function(header){
+        headers.push(header.trim());
+      });
+      //If we're doing a select just assign these
+      if(operationParam.selectFields === '*'){
+        operationParam.selectFields = headers;
+      }
+      //First things first - let's write the select headers to the out file
+      writeStream.write(operationParam.selectFields.join(',')+'\n');
     }
     //loop over the complete lines in this chunk
     lines.forEach(function(line){
@@ -127,8 +152,8 @@ function processCSV(csvFile, outFile, operation, operationParam){
       var rowValues = line.split(',');
       var row = {};
       headers.forEach(function(header){
-        //Trim any whitespace from the key and value
-        row[header.trim()] = rowValues.shift().trim(); //{'header' : 'value'}
+        //Trim any whitespace from the value
+        row[header] = rowValues.shift().trim(); //{'header' : 'value'}
       });
       switch(operation.toUpperCase()){
         case 'FETCH':
@@ -138,6 +163,10 @@ function processCSV(csvFile, outFile, operation, operationParam){
           }
           break;
         case 'UPDATE':
+          //if our query returns true, then increment the rows affected counter
+          if(queryLines(row, 'UPDATE', operationParam, matchCondition, writeStream)){
+            count++;
+          }
           break;
         case 'REMOVE':
           break;
@@ -210,5 +239,11 @@ var queries = [
     'matchCondition' : 'ALL'
   }
 ];
+
+var operationParam = {
+  queries : queries,
+  update : {'occupation' : 'Retired', 'location' : 'N/A'}, //?
+  selectFields : '*'
+}
 console.log(Date());
-processCSV('./CSV/demo.csv', './CSV/demo_result.csv','FETCH', queries);
+processCSV('./CSV/demo.csv', './CSV/demo_result.csv','UPDATE', operationParam);
