@@ -12,11 +12,11 @@ function runQuery(query){
     case 'EQUAL':
       return (query.value === this[query.header]) ? true : false;
       break;
-    case 'LESS THAN':
-      return (query.value < this[query.header]) ? true : false;
+    case 'LOWER THAN':
+      return (this[query.header] < query.value) ? true : false;
       break;
-    case 'MORE THAN':
-      return (query.value > this[query.header]) ? true : false;
+    case 'HIGHER THAN':
+      return (this[query.header] > query.value) ? true : false;
       break;
     case 'NOT':
       return (query.value != this[query.header]) ? true : false;
@@ -27,7 +27,6 @@ function runQuery(query){
     case 'DOES NOT CONTAIN':
       return (this.indexOf(query.value) === -1) ? true : false;
   }
-  return false;
 }
 /**
   queries   array   array of queries, each with the format
@@ -160,7 +159,7 @@ var queries = [
   },
   {
     'header':'age',
-    'condition': 'greater_than',
+    'condition': 'higher than',
     'value': '30'
   },
   {
@@ -171,10 +170,10 @@ var queries = [
   {
     'header' :'occupation',
     'condition' : 'contains',
-    'value' : 'student'
+    'value' : 'Student'
   },
   {
-    'matchCondition' : 'ANY'
+    'matchCondition' : 'ALL'
   }
 ];
 console.log(Date());
