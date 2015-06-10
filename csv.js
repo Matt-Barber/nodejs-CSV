@@ -5,10 +5,18 @@ var fs = require('fs');
 // 1. Upload CSV file to a storage location
 // 2. Get the query from the User
 // 3. Process CSV and inform user of Process
+
+
+/**
+  RunQuery is used to perform set tests specified by a query on a line of data
+  @param  query   data structure    contains header, value and condition to perform on the data
+
+  @return  boolean    dependant on the condition
+**/
 function runQuery(query){
   switch(query.condition.toUpperCase()){
     //TODO: Add a handler for type?
-    //Parse based on condition type
+
     case 'EQUAL':
       return (query.value === this[query.header]) ? true : false;
       break;
@@ -29,31 +37,35 @@ function runQuery(query){
   }
 }
 /**
-  queries   array   array of queries, each with the format
-                    [{
-                      'header' : [VALID HEADER NAME]
-                      'condition' : [CONDITION]
-                      'value' : [VALUE]
-                    },
-                    {
-                      'matchCondition' : 'ANY' || 'ALL' or 'ALL'
-                    }]
-*/
+queryLines takes in the line as a data object to perform the query on,
+the operation to perform, the set of queries, an AND / OR condition
+and a writeStream
+
+@param  line            data oject    A set of key value pairs {header : value, header : value}
+@param  operation       string        what type of query to perform on the data
+@param  queries         array({})     An array of queries to perform on the line
+@param  matchCondition  string        ANY = OR, ALL = AND
+@param  outStream       writeStream   An output for the data
+
+@return boolean         lineMatch     success or fail?
+**/
 function queryLines(line, operation, queries, matchCondition, outStream){
   //If the line meets the query(s) then we'll set this to true
   var lineMatch = false;
   //Loop across the queries
   if(matchCondition === 'ANY'){
+    //if some equate to true
     lineMatch = queries.some(runQuery, line);
   }
   else if(matchCondition === 'ALL'){
+    //if they are all true
     lineMatch = queries.every(runQuery, line);
   }
 
   //Assuming the conditions are met, loop across the values and write them to the out file
   if(lineMatch){
     for(var header in line){
-      outStream.write(line[header] + ', ');
+      outStream.write(line[header] + ', '); //TODO: Trim Trailing ','
     }
     outStream.write('\n');
   }
@@ -64,7 +76,23 @@ function deduplicate(){};
 */
 function comparison(){};
 /**
-*/
+  ProcessCSV performs the chosen operation on the data with a set of parameters
+  @param  csvFile         string    File to read in the CSV data from
+  @param  outFile         string    Where to write the resultant data to
+  @param  operation       string    What opeartion type to perform on the data
+  @param  operationParam  array     Array of operationParameters to run on the file
+
+  @Example ::
+    Query Params =
+        [
+          {'header' : HEADER_NAME, 'condition' : CONDITION, 'value' : VALUE},
+          {'header' : HEADER_NAME, 'condition' : CONDITION, 'value' : VALUE},
+          {'matchCondition' : ANY || ALL}
+        ]
+
+  @return count   integer   rows affected
+
+**/
 function processCSV(csvFile, outFile, operation, operationParam){
   //used to store temporary strings / chunks
   var buffer = '';
@@ -86,19 +114,25 @@ function processCSV(csvFile, outFile, operation, operationParam){
     buffer = buffer.split('\n'); //TODO : Check type of line encoding
     //Slice off all the complete lines leaving the remainder in the buffer
     var lines = buffer.slice(0, buffer.length-1); //TODO : Set the number to remove to length of line ending (accounting for \r\n)
+    //Let's get the headers if we don't already have them - this should only call on the first chunk
     if(headers === false){
       headers = lines.shift().split(',');
+      //First things first - let's write his to the out file
       writeStream.write(headers.join(',')+'\n');
     }
     //loop over the complete lines in this chunk
     lines.forEach(function(line){
+
+      //Create an object using the row values and the headers
       var rowValues = line.split(',');
       var row = {};
       headers.forEach(function(header){
+        //Trim any whitespace from the key and value
         row[header.trim()] = rowValues.shift().trim(); //{'header' : 'value'}
       });
       switch(operation.toUpperCase()){
         case 'FETCH':
+          //if our query returns true, then increment the rows affected counter
           if(queryLines(row, 'FETCH', operationParam, matchCondition, writeStream)){
             count++;
           }
