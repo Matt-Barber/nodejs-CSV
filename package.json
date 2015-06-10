@@ -1,0 +1,22 @@
+{
+  "name": "CSV",
+  "version": "1.0.0",
+  "description": "CSV parser in NodeJs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "CSV",
+    "parser",
+    "data",
+    "management",
+    "reporting",
+    "querying",
+    "comma-seperated",
+    "file",
+    "handler"
+  ],
+  "author": "Matt Barber",
+  "license": "MIT"
+}
