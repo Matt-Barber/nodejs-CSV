@@ -81,7 +81,6 @@ function queryLines(line, operation, operationParam, matchCondition, outStream){
       }
     }
     select.forEach(function(field){
-      console.log(field);
       outStream.write(line[field] + ', '); //TODO: Trim Trailing ','
     });
     outStream.write('\n');
@@ -169,6 +168,7 @@ function processCSV(csvFile, outFile, operation, operationParam){
           }
           break;
         case 'REMOVE':
+          if(queryLines(row, 'REMOVE', operationParam, matchCondition, writeStream))
           break;
         case 'DEDUPE':
           break;
@@ -242,8 +242,8 @@ var queries = [
 
 var operationParam = {
   queries : queries,
-  update : {'occupation' : 'Retired', 'location' : 'N/A'}, //?
+  //update : {'occupation' : 'Retired', 'location' : 'N/A'}, //?
   selectFields : '*'
 }
 console.log(Date());
-processCSV('./CSV/demo.csv', './CSV/demo_result.csv','UPDATE', operationParam);
+processCSV('./CSV/demo.csv', './CSV/demo_result.csv','REMOVE', operationParam);
