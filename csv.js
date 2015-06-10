@@ -5,6 +5,30 @@ var fs = require('fs');
 // 1. Upload CSV file to a storage location
 // 2. Get the query from the User
 // 3. Process CSV and inform user of Process
+function runQuery(query){
+  switch(query.condition.toUpperCase()){
+    //TODO: Add a handler for type?
+    //Parse based on condition type
+    case 'EQUAL':
+      return (query.value === this[query.header]) ? true : false;
+      break;
+    case 'LESS THAN':
+      return (query.value < this[query.header]) ? true : false;
+      break;
+    case 'MORE THAN':
+      return (query.value > this[query.header]) ? true : false;
+      break;
+    case 'NOT':
+      return (query.value != this[query.header]) ? true : false;
+      break;
+    case 'CONTAINS':
+      return (this[query.header].indexOf(query.value) != -1) ? true : false;
+      break;
+    case 'DOES NOT CONTAIN':
+      return (this.indexOf(query.value) === -1) ? true : false;
+  }
+  return false;
+}
 /**
   queries   array   array of queries, each with the format
                     [{
@@ -20,72 +44,13 @@ function queryLines(line, operation, queries, matchCondition, outStream){
   //If the line meets the query(s) then we'll set this to true
   var lineMatch = false;
   //Loop across the queries
-  queries.forEach(function(query){
-      switch(query.condition.toUpperCase()){
-        //TODO: Add a handler for type?
-        //Parse based on condition type
-        case 'EQUAL':
-          if(query.value === line[query.header]){
-            if(matchCondition.toUpperCase() === 'ANY' || 'ALL'){
-              lineMatch = true;
-            }
-          }
-          else if(matchCondition.toUpperCase() === 'ALL'){
-            lineMatch = false;
-          }
-          break;
-        case 'LESS THAN':
-          if(query.value < line[query.header]){
-            if(matchCondition.toUpperCase() === 'ANY' || 'ALL'){
-              lineMatch = true;
-            }
-          }
-          else if(matchCondition.toUpperCase() === 'ALL'){
-            lineMatch = false;
-          }
-          break;
-        case 'MORE THAN':
-          if(query.value > line[query.header]){
-            if(matchCondition.toUpperCase() === 'ANY' || 'ALL'){
-              lineMatch = true;
-            }
-          }
-          else if(matchCondition.toUpperCase() === 'ALL'){
-            lineMatch = false;
-          }
-          break;
-        case 'NOT':
-          if(query.value != line[query.header]){
-            if(matchCondition.toUpperCase() === 'ANY' || 'ALL'){
-              lineMatch = true;
-            }
-          }
-          else if(matchCondition.toUpperCase() === 'ALL'){
-            lineMatch = false;
-          }
-          break;
-        case 'CONTAINS':
-          if(line[query.header].indexOf(query.value) != -1){
-            if(matchCondition.toUpperCase() === 'ANY' || 'ALL'){
-              lineMatch = true;
-            }
-          }
-          else if(matchCondition.toUpperCase() === 'ALL'){
-            lineMatch = false;
-          }
-          break;
-        case 'DOES NOT CONTAIN':
-          if(line.indexOf(query.value) === -1){
-            if(matchCondition.toUpperCase() === 'ANY' || 'ALL' || 'ALL'){
-              lineMatch = true;
-            }
-          }
-          else if(matchCondition.toUpperCase() === 'ALL'){
-            lineMatch = false;
-          }
-          break;
-      }
-  });
+  if(matchCondition === 'ANY'){
+    lineMatch = queries.some(runQuery, line);
+  }
+  else if(matchCondition === 'ALL'){
+    lineMatch = queries.every(runQuery, line);
+  }
+
   //Assuming the conditions are met, loop across the values and write them to the out file
   if(lineMatch){
     for(var header in line){
@@ -200,11 +165,16 @@ var queries = [
   },
   {
     'header':'location',
-    'condition' : 'equal',
+    'condition' : 'contains',
     'value'  : 'London'
   },
   {
-    'matchCondition' : 'ALL'
+    'header' :'occupation',
+    'condition' : 'contains',
+    'value' : 'student'
+  },
+  {
+    'matchCondition' : 'ANY'
   }
 ];
 console.log(Date());
