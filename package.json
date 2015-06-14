@@ -1,6 +1,6 @@
 {
   "name": "CSV",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "CSV parser in NodeJs",
   "main": "index.js",
   "scripts": {

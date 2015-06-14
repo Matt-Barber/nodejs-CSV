@@ -1,249 +1,212 @@
-// Problem :: Users can't easily parse and query CSV files
+
 'use strict';
-var fs = require('fs');
-
-// 1. Upload CSV file to a storage location
-// 2. Get the query from the User
-// 3. Process CSV and inform user of Process
-
-
 /**
-  RunQuery is used to perform set tests specified by a query on a line of data
-  @param  query   data structure    contains header, value and condition to perform on the data
-
-  @return  boolean    dependant on the condition
+  * CSV Module allowing for querying
+  * @license : MIT
+  *
+  * @category : Data Analysis
+  * @package : CSV
+  * @version : 0.1
+  * @link : ....
+  * @since: v0.1
+  *
+  * @author : Matt Barber
+  * @created : 10th June 2015
+  * @updated : 14th June 2015
 **/
-function runQuery(query){
-  switch(query.condition.toUpperCase()){
+
+
+var CSV  =  function(){
+  var fs = require('fs');
+  /**
+   * Splits a string returning an array of headers
+   * @param {line}  string    Line of a csv file represented as a string
+   * @return array
+   * @visibility : private
+
+  **/
+  function getHeaders(line){
+    var headers = [];
+    line.split(',').forEach(function(header){
+      //trim the whitespace either side before pushing on to the array
+      headers.push(header.trim());
+    });
+    return headers;
+  }
+
+
+  /**
+   * Given the filename create a structure of streams
+   * @param {fileName}  string  filename + path
+   * @return object
+   * @visibility private
+  **/
+  function createStreams(fileName){
+    var streams = {
+      read : fs.createReadStream(fileName),
+      write : fs.createWriteStream(fileName+'test.csv') //TODO::validate
+    };
+    streams.read.setEncoding('UTF-8');
+    return streams;
+  };
+
+  /**
+   * Takes in a query as an object parameter, as well as a row object
+   * @param query   object
+   * @return boolean
+   * @visibility  private
+  **/
+  function analyseQuery(query){
     //TODO: Add a handler for type?
-
-    case 'EQUAL':
-      return (query.value === this[query.header]) ? true : false;
-      break;
-    case 'LOWER THAN':
-      return (this[query.header] < query.value) ? true : false;
-      break;
-    case 'HIGHER THAN':
-      return (this[query.header] > query.value) ? true : false;
-      break;
-    case 'NOT':
-      return (query.value != this[query.header]) ? true : false;
-      break;
-    case 'CONTAINS':
-      return (this[query.header].indexOf(query.value) != -1) ? true : false;
-      break;
-    case 'DOES NOT CONTAIN':
-      return (this.indexOf(query.value) === -1) ? true : false;
-  }
-}
-/**
-queryLines takes in the line as a data object to perform the query on,
-the operation to perform, the set of queries, an AND / OR condition
-and a writeStream
-
-@param  line            data oject    A set of key value pairs {header : value, header : value}
-@param  operation       string        what type of query to perform on the data
-@param  operationParam         array({})     An array of queries to perform on the line
-@param  matchCondition  string        ANY = OR, ALL = AND
-@param  outStream       writeStream   An output for the data
-
-@return boolean         lineMatch     success or fail?
-**/
-function queryLines(line, operation, operationParam, matchCondition, outStream){
-  var queries = operationParam.queries;
-  var select = operationParam.selectFields;
-
-  if('undefined' !== typeof operationParam.update){
-    var update = operationParam.update;
-  }
-  //If the line meets the query(s) then we'll set this to true
-  var lineMatch = false;
-  //Loop across the queries
-  if(matchCondition === 'ANY'){
-    //if some equate to true
-    lineMatch = queries.some(runQuery, line);
-  }
-  else if(matchCondition === 'ALL'){
-    //if they are all true
-    lineMatch = queries.every(runQuery, line);
-  }
-  if(operation === 'REMOVE'){
-    lineMatch = !lineMatch;
-  }
-  //Assuming the conditions are met, loop across the values and write them to the out file
-  if(lineMatch){
-    if(operation === 'UPDATE'){
-      /**
-        Too much looping here hardly seems worth it? TODO :: Research and experiment
-      **/
-      for(var field in update){
-        line[field] = update[field];
-      }
+    switch(query.condition.toUpperCase()){
+      case 'EQUAL':
+        return (query.value === this[query.header]) ? true : false;
+        break;
+      case 'LOWER THAN':
+        return (this[query.header] < query.value) ? true : false;
+        break;
+      case 'HIGHER THAN':
+        return (this[query.header] > query.value) ? true : false;
+        break;
+      case 'NOT':
+        return (query.value != this[query.header]) ? true : false;
+        break;
+      case 'CONTAINS':
+        return (this[query.header].indexOf(query.value) != -1) ? true : false;
+        break;
+      case 'DOES NOT CONTAIN':
+        return (this.indexOf(query.value) === -1) ? true : false;
     }
-    select.forEach(function(field){
-      outStream.write(line[field] + ', '); //TODO: Trim Trailing ','
-    });
-    outStream.write('\n');
-  }
-  return lineMatch;
-}
-function deduplicate(){};
-/**
-*/
-function comparison(){};
-/**
-  ProcessCSV performs the chosen operation on the data with a set of parameters
-  @param  csvFile         string    File to read in the CSV data from
-  @param  outFile         string    Where to write the resultant data to
-  @param  operation       string    What opeartion type to perform on the data
-  @param  operationParam  array     Array of operationParameters to run on the file
-
-  @Example ::
-    Query Params =
-        [
-          {'header' : HEADER_NAME, 'condition' : CONDITION, 'value' : VALUE},
-          {'header' : HEADER_NAME, 'condition' : CONDITION, 'value' : VALUE},
-          {'matchCondition' : ANY || ALL}
-        ]
-
-  @return count   integer   rows affected
-
-**/
-function processCSV(csvFile, outFile, operation, operationParam){
-  //used to store temporary strings / chunks
-  var buffer = '';
-  //used to give a count of output records
-  var count = 0;
-  if(operation === 'FETCH' || 'UPDATE' || 'REMOVE'){
-    var matchCondition = operationParam.queries.pop().matchCondition;
-  }
-  var readStream = fs.createReadStream(csvFile);
-  var writeStream = fs.createWriteStream(outFile);
-
-  var headers = false;
-
-  readStream.setEncoding('UTF-8');
-  readStream.on('data', function(chunk){
-    //Add the incoming chunk to the existing buffer
-    buffer += chunk;
-    //split the buffer into a buffer of lines
-    buffer = buffer.split('\n'); //TODO : Check type of line encoding
-    //Slice off all the complete lines leaving the remainder in the buffer
-    var lines = buffer.slice(0, buffer.length-1); //TODO : Set the number to remove to length of line ending (accounting for \r\n)
-    //Let's get the headers if we don't already have them - this should only call on the first chunk
-    if(headers === false){
-      headers = [];
-      //While we're getting the headers we need to trim white space.
-      lines.shift().split(',').forEach(function(header){
-        headers.push(header.trim());
-      });
-      //If we're doing a select just assign these
-      if(operationParam.selectFields === '*'){
-        operationParam.selectFields = headers;
-      }
-      //First things first - let's write the select headers to the out file
-      writeStream.write(operationParam.selectFields.join(',')+'\n');
+  };
+  /**
+   * Takes in an operation, set of parameters (query), a match condition
+   * and read stream, returns linematch / writes output to write stream
+   * @param operation       string    Type of operation (SELECT, REMOVE, UPDATE)
+   * @param row             object    A line of the CSV as {header : value}
+   * @param params          object    Set of queries and added element called 'update' for that operation
+   * @param matchCondition  string    ANY || ALL
+   * @param writeStream     stream    A write stream for output
+   *
+   * @return boolean
+   * @visibility private
+  **/
+  function processQuery(operation, row, params, matchCondition, writeStream){
+    //Set the queries as a separate array
+    var queries = params.queries;
+    //Get the return fields, the "select"
+    var select = params.select;
+    //Only set this if it's declared - we only need it for an UPDATE
+    if('undefined' !== typeof params.update){
+      var update = params.update;
     }
-    //loop over the complete lines in this chunk
-    lines.forEach(function(line){
 
-      //Create an object using the row values and the headers
-      var rowValues = line.split(',');
-      var row = {};
-      headers.forEach(function(header){
-        //Trim any whitespace from the value
-        row[header] = rowValues.shift().trim(); //{'header' : 'value'}
+    var lineMatch = false;
+
+    if(matchCondition === 'ANY'){
+      //We only need some of the results to be true
+      lineMatch = queries.some(analyseQuery, row);
+    }
+    else if(matchCondition === 'ALL'){
+      //We need every entry to be true
+      lineMatch = queries.every(analyseQuery, row);
+    }
+    //If the operation is REMOVE we need to flip the result
+    if(operation === 'REMOVE'){
+      lineMatch = !lineMatch;
+    }
+    if(lineMatch){
+      //If we have an UPDATE then modify the field with the values given
+      if(operation === 'UPDATE'){
+        update.forEach(function(field){
+          row[field] = update[field];
+        });
+      }
+      select.forEach(function(field){
+        writeStream.write(row[field] + ', '); //TODO :: Trim Trailing ','
       });
-      switch(operation.toUpperCase()){
-        case 'FETCH':
-          //if our query returns true, then increment the rows affected counter
-          if(queryLines(row, 'FETCH', operationParam, matchCondition, writeStream)){
+      writeStream.write('\n'); //TODO :: detect line ending
+    }
+    return lineMatch;
+  };
+  /**
+   * Query CSV opens the read file, and pushes each line to the processQuery method
+   * @param opeartion   string    SELECT || UPDATE || REMOVE
+   * @param fileName    string    The path and name of the read file
+   * @param params      object    Parameters for the query
+  **/
+  function queryCSV(operation, fileName, params){
+      var streams = createStreams(fileName);
+      var headers = false;
+      var buffer  = '';
+      var count = 0;
+      var matchCondition = params.queries.pop().matchCondition;
+      streams.read.on('data', function(chunk){
+        buffer += chunk;
+        buffer = buffer.split('\n') //TODO :: detect line ending
+        var lines = buffer.slice(0, buffer.length-1) // TODO :: -1 is length of lineending
+        if(headers === false){
+          headers = getHeaders(lines.shift());
+          if(params.select === '*'){
+            params.select = headers;
+          }
+          streams.write.write(params.select.join(',') + '\n'); //TODO :: again use the lineending
+        }
+        lines.forEach(function(line){
+          var row = {};
+          var values = line.split(',');
+          headers.forEach(function(header){
+            row[header] = values.shift().trim();
+          });
+          if(processQuery(operation, row, params, matchCondition, streams.write)){
             count++;
           }
-          break;
-        case 'UPDATE':
-          //if our query returns true, then increment the rows affected counter
-          if(queryLines(row, 'UPDATE', operationParam, matchCondition, writeStream)){
-            count++;
-          }
-          break;
-        case 'REMOVE':
-          if(queryLines(row, 'REMOVE', operationParam, matchCondition, writeStream))
-          break;
-        case 'DEDUPE':
-          break;
-        case 'COMPARE':
-          break;
-        default:
-          break;
-      }
-    });
-    //set the buffer to the remenants of last iteration
-    //TODO :: Won't work on final iteration - need to check what's going on here?
-    buffer = (buffer[buffer.length-1].length < 1) ? '' : buffer.pop();
-  });
-  readStream.on('end', function(){
-    writeStream.end();
-    console.log(count);
-    console.log(Date());
-  });
-  readStream.on('error', function(e){
-    console.error(e.message);
-  });
-  writeStream.on('error', function(e){
-    console.error(e.message);
-  });
+        });
+        buffer = (buffer[buffer.length-1].length < 1) ? '' : buffer.pop();
+      });
+      streams.read.on('end', function(){
+        streams.write.end();
+        return count;
+      });
+      streams.write.on('error', function(e){
+        console.error(e.message);
+      });
+      streams.read.on('error', function(e){
+        console.error(e.message);
+      });
+  };
+  /**
+    Method performs a SELECT search on the filename using the given parameters
+  */
+  this.select = function(fileName, params){
+    queryCSV('SELECT', fileName, params);
+  };
+  this.update = function(fileName, params){
+    queryCSV('UPDATE', fileName, params);
+  };
+  this.insert = function(fileName, params){
+    queryCSV('INSERT', fileName, params);
+  };
+  this.remove = function(fileName, params){
+    queryCSV('REMOVE', fileName, params);
+  };
+  this.deduplicate = '';
+  this.compare = '';
+  this.split = '';
+  this.sample = '';
+  this.random = '';
 }
-// 3.1 FETCH, UPDATE, REMOVE
-// 3.2 Deduplicate
-// 3.3 Comparison
+var test = new CSV();
 
-// 4. Return processed file
-
-/**
-
-  Notes:
-    Operations -
-                  //These all use the same process
-                  Fetch where field(s) condition value(s), match on ANY or ALL
-                  Update where field(s) condition value(s), match on ANY or ALL
-                  Remove where field(s) condition value(s) match on ANY or ALL
-
-                  Deduplicate CSV based on field(s)
-                  Compare multiple CSVs, where is or isn't a match
-
-
-**/
-var queries = [
-  {
-    'header': 'email',
-    'condition': 'contains',
-    'value':'gmail.com'
-  },
-  {
-    'header':'age',
-    'condition': 'higher than',
-    'value': '30'
-  },
-  {
-    'header':'location',
-    'condition' : 'contains',
-    'value'  : 'London'
-  },
-  {
-    'header' :'occupation',
-    'condition' : 'contains',
-    'value' : 'Student'
-  },
-  {
-    'matchCondition' : 'ALL'
-  }
-];
-
-var operationParam = {
-  queries : queries,
-  //update : {'occupation' : 'Retired', 'location' : 'N/A'}, //?
-  selectFields : '*'
-}
+var testQuery = {
+  queries  : [
+    {'header' : 'email', 'condition' : 'contains', 'value' : 'gmail.com'},
+    {'header' : 'age', 'condition' : 'higher than', 'value' : '30'},
+    {'matchCondition' : 'ALL'}],
+  select : '*'
+};
 console.log(Date());
-processCSV('./CSV/demo.csv', './CSV/demo_result.csv','REMOVE', operationParam);
+var counter = test.select('./CSV/demo.csv', testQuery).exec(function(err, count){
+  console.log(count);
+  console.log(Date());
+});
+module.exports = new CSV();
