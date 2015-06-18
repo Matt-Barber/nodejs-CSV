@@ -22,4 +22,6 @@ test.select('./CSV/demo.csv', testQuery);
 - Multi-value fields aren't handled in the data yet
 - Data types not established for data so no handling of date operations in current module
 
+- DOESN'T DETECT LINE ENDINGS
+
 **THIS IS VERY MUCH AN EXPERIMENTAL REPO **
