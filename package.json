@@ -2,7 +2,7 @@
   "name": "CSV",
   "version": "1.0.1",
   "description": "CSV parser in NodeJs",
-  "main": "index.js",
+  "main": "csv.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

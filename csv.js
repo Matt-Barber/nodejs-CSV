@@ -180,6 +180,9 @@ var CSV  =  function(){
   this.select = function(fileName, params){
     queryCSV('SELECT', fileName, params);
   };
+  /**
+    Method performs an UPDATE (search and replace) on the filename using the given params
+  */
   this.update = function(fileName, params){
     queryCSV('UPDATE', fileName, params);
   };
