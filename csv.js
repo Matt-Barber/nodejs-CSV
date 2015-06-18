@@ -198,18 +198,5 @@ var CSV  =  function(){
   this.sample = '';
   this.random = '';
 }
-var test = new CSV();
 
-var testQuery = {
-  queries  : [
-    {'header' : 'email', 'condition' : 'contains', 'value' : 'gmail.com'},
-    {'header' : 'age', 'condition' : 'higher than', 'value' : '30'},
-    {'matchCondition' : 'ALL'}],
-  select : '*'
-};
-console.log(Date());
-var counter = test.select('./CSV/demo.csv', testQuery).exec(function(err, count){
-  console.log(count);
-  console.log(Date());
-});
 module.exports = new CSV();
