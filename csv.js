@@ -18,6 +18,7 @@
 
 var CSV  =  function(){
   var fs = require('fs');
+  var os = require('os');
   /**
    * Splits a string returning an array of headers
    * @param {line}  string    Line of a csv file represented as a string
@@ -121,10 +122,10 @@ var CSV  =  function(){
           row[field] = update[field];
         });
       }
-      select.forEach(function(field){
-        writeStream.write(row[field] + ', '); //TODO :: Trim Trailing ','
+      select.forEach(function(field, index, array){
+        var writeString = (index < array.length-1) ? row[field] + ', ' : row[field] + os.EOL;
+        writeStream.write(writeString);
       });
-      writeStream.write('\n'); //TODO :: detect line ending
     }
     return lineMatch;
   };
@@ -133,38 +134,48 @@ var CSV  =  function(){
    * @param opeartion   string    SELECT || UPDATE || REMOVE
    * @param fileName    string    The path and name of the read file
    * @param params      object    Parameters for the query
+   * @param callback    function  Callback for when the process completes
   **/
-  function queryCSV(operation, fileName, params){
+  function queryCSV(operation, fileName, params, callback){
       var streams = createStreams(fileName);
       var headers = false;
       var buffer  = '';
       var count = 0;
       var matchCondition = params.queries.pop().matchCondition;
       streams.read.on('data', function(chunk){
+        //Add the next chunk on to the outstanding buffer, and split the buffer by the new line chatacters
         buffer += chunk;
-        buffer = buffer.split('\n') //TODO :: detect line ending
-        var lines = buffer.slice(0, buffer.length-1) // TODO :: -1 is length of lineending
+        buffer = buffer.split(/\r\n|\r|\n/g)
+        // The last element might not be complete in the chunk (best be on the safe side) - we'll handle this at the end
+        var lines = buffer.slice(0, buffer.length-1)
+        //If we haven't got the headers - then this will still be false, so we can just shift the first line off
         if(headers === false){
           headers = getHeaders(lines.shift());
+          //If the SELECT is * then we need all the headers
           if(params.select === '*'){
             params.select = headers;
           }
-          streams.write.write(params.select.join(',') + '\n'); //TODO :: again use the lineending
+          //Let's write the headers to the out file using the os.EOL to detect platform end of line
+          streams.write.write(params.select.join(',') + os.EOL);
         }
         lines.forEach(function(line){
           var row = {};
-          var values = line.split(',');
+          //REGEX to split the CSV correctly as documented here : http://stackoverflow.com/questions/8493195/how-can-i-parse-a-csv-string-with-javascript
+          var values = line.match(/(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g);
+          //Now let's turn the headers and values into a usable object.
           headers.forEach(function(header){
-            row[header] = values.shift().trim();
+            row[header] = values.shift().trim().replace(/\,$/, '');
           });
           if(processQuery(operation, row, params, matchCondition, streams.write)){
             count++;
           }
         });
         buffer = (buffer[buffer.length-1].length < 1) ? '' : buffer.pop();
+        return true; //I'm ready for the next data chunk
       });
       streams.read.on('end', function(){
         streams.write.end();
+        callback(count);
         return count;
       });
       streams.write.on('error', function(e){
@@ -177,20 +188,20 @@ var CSV  =  function(){
   /**
     Method performs a SELECT search on the filename using the given parameters
   */
-  this.select = function(fileName, params){
-    queryCSV('SELECT', fileName, params);
+  this.select = function(fileName, params, callback){
+    queryCSV('SELECT', fileName, params, callback);
   };
   /**
     Method performs an UPDATE (search and replace) on the filename using the given params
   */
-  this.update = function(fileName, params){
-    queryCSV('UPDATE', fileName, params);
+  this.update = function(fileName, params, callback){
+    queryCSV('UPDATE', fileName, params, callback);
   };
-  this.insert = function(fileName, params){
-    queryCSV('INSERT', fileName, params);
+  this.insert = function(fileName, params, callback){
+    queryCSV('INSERT', fileName, params, callback);
   };
-  this.remove = function(fileName, params){
-    queryCSV('REMOVE', fileName, params);
+  this.remove = function(fileName, params, callback){
+    queryCSV('REMOVE', fileName, params, callback);
   };
   this.deduplicate = '';
   this.compare = '';
@@ -198,5 +209,21 @@ var CSV  =  function(){
   this.sample = '';
   this.random = '';
 }
+
+var test = new CSV();
+
+var testQuery = {
+  queries  : [
+    {'header' : 'email', 'condition' : 'contains', 'value' : 'gmail.com'},
+    {'header' : 'age', 'condition' : 'higher than', 'value' : '30'},
+    {'matchCondition' : 'ALL'}],
+  select : '*'
+};
+console.log(Date());
+var showComplete = function(count){
+  console.log(count);
+  console.log(Date());
+}
+var counter = test.select('./CSV/demo.csv', testQuery, showComplete);
 
 module.exports = new CSV();
