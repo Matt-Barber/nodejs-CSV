@@ -23,8 +23,11 @@ var CSV  =  function(){
   var CSV_VALUES = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
   /**
   * Generates a unique hash for user files / folders
+  * @param  string    string    Part of the original string
+  * @param  length    integer   The length of the unique string to return
   *
-  *
+  * @return string
+  * @visibility : private
   */
   function generateUnique(string, length){
     var text = '';
@@ -48,6 +51,14 @@ var CSV  =  function(){
     });
     return headers;
   }
+  /**
+   * Turns headers and a single CSV string into an object
+   * @param   headers     array     Array of headers from the CSV
+   * @param   line        string    Valid CSV string
+   *
+   * @return object
+   * @visibility : private
+   */
   function createRow(headers, line){
     var row = {};
     //REGEX to split the CSV correctly as documented here : http://stackoverflow.com/questions/8493195/how-can-i-parse-a-csv-string-with-javascript
@@ -278,7 +289,11 @@ var CSV  =  function(){
   }
   /**
   * Split the CSV into a set of CSVs grouped by a field match value (i.e. email -> domain? regex? )
+  * @param  fileName    string       path/to/source/csv/to/split
+  * @param  params      object
+  * @param  callback    function    what to do at the end of the async
   *
+  * @visibility private
   */
   function splitCSV(fileName, params, callback){
     do{
