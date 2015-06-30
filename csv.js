@@ -361,7 +361,7 @@ var CSV  =  function(){
     Method performs a SELECT search on the filename using the given parameters
   */
   this.select = function(fileName, params, callback){
-    var streams = createStreams(fileName, 'output_' + fileName);
+    var streams = createStreams(fileName, fileName.substring(0, fileName.length-3) + '_output.csv');
     queryCSV('SELECT', streams, params, callback);
   };
   /**

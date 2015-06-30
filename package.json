@@ -4,7 +4,7 @@
   "description": "CSV parser in NodeJs",
   "main": "csv.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha spec"
   },
   "keywords": [
     "CSV",
@@ -18,5 +18,9 @@
     "handler"
   ],
   "author": "Matt Barber",
-  "license": "MIT"
+  "license": "MIT",
+  "dependancies": {
+    "chai" : "*",
+    "mocha" : "*"
+  }
 }

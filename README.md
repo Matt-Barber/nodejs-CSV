@@ -4,6 +4,7 @@ This module is designed to allow for database style queries to be carried out on
 Incomplete currently - SELECT, UPDATE, INSERT, REMOVE are implemented
 
 ##Example call##
+
 ```
 var test = new CSV();
 
