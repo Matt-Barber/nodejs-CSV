@@ -19,7 +19,7 @@
 var CSV  =  function(){
 
   //Set our global constants in this module
-  const fs = require('fs'),
+  var fs = require('fs'),
         os = require('os'),
         NEW_LINE = /\r\n|\r|\n/g,
         CSV_VALUES = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
