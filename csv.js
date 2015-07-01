@@ -17,10 +17,12 @@
 
 
 var CSV  =  function(){
-  var fs = require('fs');
-  var os = require('os');
-  var NEW_LINE = /\r\n|\r|\n/g;
-  var CSV_VALUES = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
+
+  //Set our global constants in this module
+  const fs = require('fs'),
+        os = require('os'),
+        NEW_LINE = /\r\n|\r|\n/g,
+        CSV_VALUES = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^,'"\s\\]*(?:\s+[^,'"\s\\]+)*))\s*(?:,|$)/g;
   /**
   * Generates a unique hash for user files / folders
   * @param  string    string    Part of the original string
@@ -30,10 +32,11 @@ var CSV  =  function(){
   * @visibility : private
   */
   function generateUnique(string, length){
-    var text = '';
-    var allowedCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for(var i =0; i<length; i++){
-      text+=allowedCharacters.charAt(Math.floor(Math.random() * allowedCharacters.length));
+    var text = '',
+        allowedCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
+        i = 0;
+    for (; i<length; i++){
+      text += allowedCharacters.charAt(Math.floor(Math.random() * allowedCharacters.length));
     }
     return string.substring(0, string.length/2).toLowerCase() + '_' + text;
   }
@@ -60,9 +63,8 @@ var CSV  =  function(){
    * @visibility : private
    */
   function createRow(headers, line){
-    var row = {};
-    //REGEX to split the CSV correctly as documented here : http://stackoverflow.com/questions/8493195/how-can-i-parse-a-csv-string-with-javascript
-    var values = line.match(CSV_VALUES);
+    var row = {},
+        values = line.match(CSV_VALUES);
     //Now let's turn the headers and values into a usable object.
     headers.forEach(function(header){
       row[header] = values.shift().trim().replace(/\,$/, '');

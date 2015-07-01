@@ -3,7 +3,7 @@ var fs = require('fs');
 var chai = require('chai');
 
 /**
- * Comparison Tests
+ * Comparison Tests using Mocha and Chai
 **/
 describe('String Comparisons', function(){
   //Use the small csv for this test
@@ -20,7 +20,9 @@ describe('String Comparisons', function(){
       };
     it("Should create a new file, of one row, with a count of 1 returned", function(done){
       CSV.select(testCSV, params, function(count){
+        //assert that the counter returned from the async should be 1
         chai.assert.equal(count, 1);
+        //and the new file should exist in the filesystem
         fs.exists(outputCSV, function (exists) {
           chai.assert.equal(exists, true);
         });
