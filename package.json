@@ -4,8 +4,13 @@
   "description": "CSV parser in NodeJs",
   "main": "csv.js",
   "scripts": {
-    "test": "mocha spec"
+    "test": "mocha ./tests/autoTest.js"
   },
+  "respository": {
+    "type": "git",
+    "url": "gitr@github.com:Matt-Barber/nodejs-CSV.git"
+    }
+  ,
   "keywords": [
     "CSV",
     "parser",

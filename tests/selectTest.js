@@ -1,37 +1,59 @@
-var CSV = require('../');
-var fs = require('fs');
-var chai = require('chai');
+var selectTest = function(){
 
-/**
- * Comparison Tests using Mocha and Chai
-**/
-describe('String Comparisons', function(){
-  //Use the small csv for this test
-  var testCSV = './csvs/sml_3_col.csv';
-  var outputCSV = testCSV.substring(0, testCSV.length-3) + '_output.csv';
-  //Tests for Select -> equals
-  describe('select -> equals', function(){
+  var CSV = require('../'),
+      fs = require('fs'),
+      chai = require('chai');
+
+  function equals(testCSV, params, expectedRows){
+    /** SELECT TESTS **/
+    var test1 = params,
+        test2 = params,
+        test3 = params;
+
+    describe('SELECT : EQUALS TESTS : 1', function(){
+      var persistResult = {};
+      it("Should return a count of " + expectedRows + " row(s)", function(done){
+        CSV.select(testCSV, params).then(function(result){
+            chai.assert.equal(expectedRows, result.rows);
+            persistResult = result;
+            done();
+        }).catch(function(err){
+          done(err);
+        });
+      });
+      it("Should generate a single file", function(){
+        fs.stat(persistResult.writeFile, function (err, stat) {
+          var exists = (err === null) ? true : false;
+          if(exists){
+             fs.unlink(persistResult.writeFile);
+          }
+          chai.assert(exists, true);
+        });
+      });
+      /** Test string SELECT  - invalid param **/
+      /** Test integer SELECT - valid param   **/
+      /** Test integer SELECT - invalid param **/
+
+    });
+  }
+
+  this.execute = function(){
     var params = {
         queries: [
-          {'header' : 'email', 'condition' : 'equal', 'value' : 'github@awesome.com'},
-          {'matchCondition' : 'ALL'}
+          {header: 'email', condition: 'equal', value: 'github@awesome.com'},
         ],
+        matchCondition : 'ALL',
         select: '*'
-      };
-    it("Should create a new file, of one row, with a count of 1 returned", function(done){
-      CSV.select(testCSV, params, function(count){
-        //assert that the counter returned from the async should be 1
-        chai.assert.equal(count, 1);
-        //and the new file should exist in the filesystem
-        fs.exists(outputCSV, function (exists) {
-          chai.assert.equal(exists, true);
-        });
-        done();
-      });
-    });
+      },
+      readFile = './tests/csvs/sml_3_col.csv',
+      expectedRows = 1;
+    equals(readFile, params, expectedRows);
+  }
+}
 
-  })
-})
+module.exports = new selectTest();
+
+
 //string
   //EQUAL
 
