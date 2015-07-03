@@ -6,10 +6,6 @@ var selectTest = function(){
 
   function equals(testCSV, params, expectedRows){
     /** SELECT TESTS **/
-    var test1 = params,
-        test2 = params,
-        test3 = params;
-
     describe('SELECT : EQUALS TESTS : 1', function(){
       var persistResult = {};
       it("Should return a count of " + expectedRows + " row(s)", function(done){
@@ -27,7 +23,7 @@ var selectTest = function(){
           if(exists){
              fs.unlink(persistResult.writeFile);
           }
-          chai.assert(exists, true);
+          chai.assert.equal(exists, true);
         });
       });
       /** Test string SELECT  - invalid param **/

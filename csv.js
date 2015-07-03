@@ -147,9 +147,10 @@ var CSV  =  function(){
     var queries = params.queries,
         //Get the return fields, the "select"
         select = params.select,
-        update = params.update || false,
+        updates = params.updates || false,
         matchCondition = params.matchCondition,
         lineMatch = false,
+        writeOut = false,
         writeString = '';
 
     if(matchCondition === 'ANY'){
@@ -163,13 +164,16 @@ var CSV  =  function(){
     //If the operation is REMOVE we need to flip the result
     if(operation === 'REMOVE') lineMatch = !lineMatch;
 
-    if(lineMatch){
-      //If we have an UPDATE then modify the field with the values given
-      if(operation === 'UPDATE'){
-        update.forEach(function(field){
-          row[field] = update[field];
-        });
-      }
+    if(lineMatch && operation === 'UPDATE'){
+      updates.forEach(function(update){
+        row[update.field] = row[update.field].replace(update.search, update.value);
+        console.log(row[update.field]);
+      });
+    }
+    if(lineMatch) writeOut = true;
+    else if(operation === ('UPDATE' || 'INSERT')) writeOut = true;
+
+    if(writeOut){
       select.forEach(function(field, index, array){
         writeString = (index < array.length-1) ? row[field] + ', ' : row[field] + os.EOL;
         writeStream.write(writeString);
