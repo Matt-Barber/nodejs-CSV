@@ -5,13 +5,13 @@
   *
   * @category : Data Analysis
   * @package : CSV
-  * @version : 0.2.0
+  * @version : 0.2.5
   * @link : ....
   * @since: v0.1.1
   *
   * @author : Matt Barber
   * @created : 10th June 2015
-  * @updated : 24th June 2015
+  * @updated : 8th July 2015
 **/
 var CSV = function(){
   //Set our global constants in this module
@@ -52,7 +52,7 @@ var CSV = function(){
     return {
       read: fs.createReadStream(readFile, {encoding: 'UTF-8'}),
       readFile : readFile,
-      write: fs.createWriteStream(writeFile),
+      write: fs.createWriteStream(writeFile, { flags: 'a' }),
       writeFile: writeFile
     };
   }
@@ -180,7 +180,7 @@ var CSV = function(){
         //Add the next chunk on to the outstanding buffer, and split the buffer by the new line chatacters
         buffer = (buffer + chunk).split(constants.NEWLINE_REGEX);
         // The last element might not be complete in the chunk (best be on the safe side) - we'll handle this at the end
-        lines = buffer.slice(0, buffer.length-1);
+        lines = (buffer.length > 2) ? buffer.slice(0, buffer.length-1) : buffer.slice(0, buffer.length);
         //If we haven't got the headers - then this will still be false, so we can just shift the first line off
         if(!headers){
           headers = _getHeaders(lines.shift());
@@ -216,11 +216,12 @@ var CSV = function(){
    * @param query    object     A query object contain operation, source, and where conditions
    * @return object
   **/
-  var executeQuery = function(query){
+  var executeQuery = function(query, _streams, append){
     //Globals for this method
-    var streams = _createStreams(query.FROM),
+    var streams = typeof streams !== 'undefined' ? _streams : _createStreams(query.FROM),
         buffer = '',
         headers = false,
+        append = typeof headers !== 'undefined' ? append : false,
         count = 0;
 
     return new Promise(function(resolve, reject){
@@ -229,7 +230,7 @@ var CSV = function(){
         //Add the next chunk on to the outstanding buffer, and split the buffer by the new line chatacters
         buffer = (buffer + chunk).split(constants.NEWLINE_REGEX);
         // The last element might not be complete in the chunk (best be on the safe side) - we'll handle this at the end
-        lines = buffer.slice(0, buffer.length-1);
+        lines = (buffer.length > 2) ? buffer.slice(0, buffer.length-1) : buffer.slice(0, buffer.length);
         //If we haven't got the headers - then this will still be false, so we can just shift the first line off
         if(!headers){
           headers = _getHeaders(lines.shift());
@@ -237,7 +238,7 @@ var CSV = function(){
           if( !query.hasOwnProperty('SELECT') ||
               query.SELECT[0] === '*') query.SELECT = headers;
           //Let's write the headers to the out file using the os.EOL to detect platform end of line
-          streams.write.write(query.SELECT.join(',') + os.EOL);
+          if(!append) streams.write.write(query.SELECT.join(',') + os.EOL);
         }
         //for each line, create a row and process - if a match is found - increment the counter
         lines.forEach(function(line){
@@ -265,23 +266,27 @@ var CSV = function(){
   }
   /**
    * COMPARES two CSVs given the source, and comparison file, as well as what conditions to match on
+   * @param cmp_query     object      Comparison query object
   **/
   var compare = function(cmp_query){
+    var streams = _createStreams(cmp_query.COMPARE);
     return new Promise(function(resolve, reject){
       //Get the queries from the cmp_query object
       _generateQueries(cmp_query).then(function(queries){
         //Reduce the queries down (execute sequentially chaining promises)
-        var result = queries.reduce(function(prev, curr){
+        var result = queries.reduce(function(prev, curr, index, array){
+          var append = (index > 0) ? true : false;
           //Execute the previous promise,
           //...then return the current promise
           return prev.then(function(){
-            return executeQuery(curr);
+            return executeQuery(curr, streams, append);
           });
         }, Promise.resolve().then(function(){
           resolve();
         }).catch(function(err){
           reject(err);
         }));
+
         //resolve the result.
         resolve(result);
       });
