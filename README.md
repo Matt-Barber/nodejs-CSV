@@ -18,18 +18,18 @@ Built using Node.JS, some methods return ES6 promises - these are documented
 
 At the endpoint you'd like to use simply add the following PHP
 ```javascript
-var CSV - require('./CSV.js'),
-    params = {
-      queries: [
-        {header: 'email', condition: 'equal', value: 'github@awesome.com'},
+var CSV = require('./CSV.js'),
+    query = {
+      SELECT: ['*'],
+      FROM: './tests/csvs/sml_3_col.csv',
+      WHERE: [
+        { field: 'email', condition: '==', value: 'github@awesome.com' }
       ],
-      matchCondition : 'ALL',
-      select: '*'
-    },
-    readFile = './tests/csvs/sml_3_col.csv';
+      MATCH: 'ANY'
+    };
 
 //Select example
-CSV.select(readFile, params).then(function(result){
+CSV.query(query).then(function(result){
   console.log('New file created : ' + result.writeFile);
   console.log('Row\s found : ' + result.rows);
 }).catch(function(err){
