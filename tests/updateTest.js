@@ -8,11 +8,11 @@ var updateTest = function(){
     * Updates the given fields, by searching and replacing the value in that record
     * Where the contains condition is met.
   **/
-  function contains(testCSV, params, expectedRows){
+  function contains(query, expectedRows){
     describe('UPDATE : CONTAINS : TEST 1', function(){
       var persistResult = {};
       it("Should return a count of " + expectedRows + " row(s)", function(done){
-        CSV.update(testCSV, params).then(function(result){
+        CSV.query(query).then(function(result){
           chai.assert.equal(expectedRows, result.rows);
           persistResult = result;
           done();
@@ -32,7 +32,7 @@ var updateTest = function(){
           if(err) done(err);
           if(stat.size>5000) done('Too Big!');
         });
-        fs.readFile(testCSV, function (err, sourceData) {
+        fs.readFile(query.FROM, function (err, sourceData) {
           if(err) done(err);
           fs.readFile(persistResult.writeFile, function (err, newData) {
             if(err) done(err);
@@ -47,19 +47,18 @@ var updateTest = function(){
   }
 
   this.execute = function(){
-    var params = {
-        queries: [
-          {header: 'email', condition: 'contains', value: 'awesome.com'},
-        ],
-        matchCondition : 'ALL',
-        select: '*',
-        updates: [
-          {field: 'email', search: 'awesome.com', value: 'awesome.co.uk'}
-        ]
-      },
-      readFile = './tests/csvs/sml_3_col.csv',
-      expectedRows = 2;
-    contains(readFile, params, expectedRows);
+    var query = {
+      UPDATE: [
+        { field: 'email' , search: /awesome\.com/, value: 'awesome.org.uk' }
+      ],
+      FROM: './tests/csvs/sml_3_col.csv',
+      WHERE: [
+        { field: 'email', condition: 'CONTAINS', value: 'awesome.com' }
+      ],
+      MATCH: 'ANY'
+    },
+    expectedRows = 2;
+    contains(query, expectedRows);
 
   }
 }

@@ -1,26 +1,50 @@
-#NodeJS CSV Module#
-This module is designed to allow for database style queries to be carried out on a CSV file, such as SELECT, UPDATE, INSERT as well as some useful standalone operations such as DEDUPE, COMPARE, SPLIT and RANDOM.
+#CSV Query Module (NodeJS)
 
-Incomplete currently - SELECT, UPDATE, INSERT, REMOVE are implemented
+##Description
+Parses a CSV file and creates a new file based on the conditions, or returns a JSON data structure for instance SELECT, REMOVE, UPDATE, INSERT, COMPARE, SPLIT, SAMPLE, DUMMY, STATS.
 
-##Example call##
+##Warnings
 
+This is a very early build, very subject to change and is literally an experimental module - I wouldn't recommend using this in it's current state - but feedback, advice and or assistance welcome.
+
+##Known Issues
+I'll get round to linking these in once the functionality expands further. Currently - lots.
+
+##Specification
+
+Built using Node.JS, some methods return ES6 promises - these are documented
+
+##Using the module
+
+At the endpoint you'd like to use simply add the following PHP
+```javascript
+var CSV - require('./CSV.js'),
+    params = {
+      queries: [
+        {header: 'email', condition: 'equal', value: 'github@awesome.com'},
+      ],
+      matchCondition : 'ALL',
+      select: '*'
+    },
+    readFile = './tests/csvs/sml_3_col.csv';
+
+//Select example
+CSV.select(readFile, params).then(function(result){
+  console.log('New file created : ' + result.writeFile);
+  console.log('Row\s found : ' + result.rows);
+}).catch(function(err){
+  console.error(err.message);
+  process.exit(1);
+});
 ```
-var test = new CSV();
+##Motivation
 
-var testQuery = {
-  queries  : [
-    {'header' : 'email', 'condition' : 'contains', 'value' : 'gmail.com'},
-    {'header' : 'age', 'condition' : 'higher than', 'value' : '30'},
-    {'matchCondition' : 'ALL'}],
-  select : "\*"
-};
-test.select('./CSV/demo.csv', testQuery);
-```
+The primary motivation behind this project is having to deal with analysing and making sense of data exports from data platforms, before using them. For instance from social media sites, CRM systems, ESPs etc.
 
-##Known bugs##
+##Tests
 
-- Data types not established for data so no handling of date operations in current module
+Example tests are included in the testing folder, using the chai and mocha test driven frameworks.
 
 
-**THIS IS VERY MUCH AN EXPERIMENTAL REPO **
+
+*Licence:* GNU

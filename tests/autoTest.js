@@ -4,8 +4,9 @@
   Test modules should only expose a single execute method - this method calls the sub tests
 **/
 var tests = {
-  'select' : require('./selectTest.js'),
-  'update' : require('./updateTest.js')
+  select : require('./selectTest.js'),
+  update : require('./updateTest.js'),
+  compare: require('./comparisonTest.js')
 },
     test = '';
 
