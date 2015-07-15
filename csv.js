@@ -40,19 +40,20 @@ var CSV = function(){
    * @return object
    * @visibility private
   **/
-  function _createStreams(readFile){
-    var writeFile = '';
+  function _createStreams(readFile, appendFile){
+    var writeFile = typeof appendFile !== 'undefined' ? appendFile : '';
       //Generate a new write file name
     do{
       writeFile = _generateUnique(readFile, 8) + '.csv';
     }while(fs.stat(writeFile, function(err, stat){
       return (err !== null) ? true : false;
-    }));
+    }) && typeof appendFile !== 'undefined');
     //Allocate streams and filenames to streams object
+
     return {
       read: fs.createReadStream(readFile, {encoding: 'UTF-8'}),
       readFile : readFile,
-      write: fs.createWriteStream(writeFile, { flags: 'a' }),
+      write: fs.createWriteStream(writeFile, { flags: 'a', mode: '0666' }),
       writeFile: writeFile
     };
   }
@@ -218,12 +219,12 @@ var CSV = function(){
   **/
   var executeQuery = function(query, _streams, append){
     //Globals for this method
-    var streams = typeof streams !== 'undefined' ? _streams : _createStreams(query.FROM),
+    var streams = typeof _streams !== 'undefined' ? _streams : _createStreams(query.FROM),
         buffer = '',
         headers = false,
         append = typeof headers !== 'undefined' ? append : false,
         count = 0;
-
+    (append) ? streams.write = fs.createWriteStream(streams.writeFile, {flags: 'a'}) : '';
     return new Promise(function(resolve, reject){
       streams.read.on('data', function(chunk){
         var lines = [];
@@ -269,7 +270,13 @@ var CSV = function(){
    * @param cmp_query     object      Comparison query object
   **/
   var compare = function(cmp_query){
-    var streams = _createStreams(cmp_query.COMPARE);
+    var appendFile = '';
+    do{
+      appendFile = _generateUnique(cmp_query.COMPARE, 8) + '.csv';
+    }while(fs.stat(appendFile, function(err, stat){
+      return (err !== null) ? true : false;
+    }));
+    var streams = _createStreams(cmp_query.COMPARE, appendFile);
     return new Promise(function(resolve, reject){
       //Get the queries from the cmp_query object
       _generateQueries(cmp_query).then(function(queries){
@@ -281,16 +288,28 @@ var CSV = function(){
           return prev.then(function(){
             return executeQuery(curr, streams, append);
           });
-        }, Promise.resolve().then(function(){
+        }, Promise.resolve().then(function(res){
           resolve();
         }).catch(function(err){
           reject(err);
         }));
-
         //resolve the result.
         resolve(result);
       });
     });
+  }
+  var statistics = function(query){
+    /**
+      example....
+      result = {
+          email : /somesortofregextoget example.com/,
+          TOTALS [
+              {msn : 1000}, {hotmail : 2000, gmail: 20}
+          ],
+          PERCENTAGES : []
+        }
+
+    **/
   }
 
   return {
