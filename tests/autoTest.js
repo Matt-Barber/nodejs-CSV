@@ -6,7 +6,8 @@
 var tests = {
   select : require('./selectTest.js'),
   update : require('./updateTest.js'),
-  compare: require('./comparisonTest.js')
+  compare: require('./comparisonTest.js'),
+  base64 : require('./base64Test.js')
 },
     test = '';
 

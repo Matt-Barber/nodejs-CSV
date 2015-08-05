@@ -65,9 +65,9 @@ var CSV = function(){
   **/
   function _getHeaders(line){
     var headers = [];
-    line.split(',').forEach(function(header){
+    line.match(constants.CSV_REGEX).forEach(function(header){
       //trim the whitespace either side before pushing on to the array
-      headers.push(header.trim());
+      headers.push(header.trim().replace(/\,$/, ''));
     });
     return headers;
   }
@@ -298,6 +298,37 @@ var CSV = function(){
       });
     });
   }
+
+  var base64 = function(sourceFile){
+    var appendFile = '';
+    do{
+      appendFile = _generateUnique(sourceFile.substring(0, -4), 8) + '.txt';
+    }while(fs.stat(appendFile, function(err, stat){
+      return (err !== null) ? true : false;
+    }));
+    var streams = _createStreams(sourceFile, appendFile);
+    return new Promise(function(resolve, reject){
+      // read in each chunk, base64 encode, and write to outfile
+      streams.read.on('data', function(chunk){
+        streams.write.write(Buffer(chunk).toString('base64'));
+      });
+      //When the stream ends, close the write stream and resolve the data
+      streams.read.on('end', function(){
+        streams.write.end();
+        resolve({
+          sourceFile: sourceFile,
+          writeFile: streams.writeFile
+        });
+      });
+      //if there is an error reject the promise
+      streams.write.on('error', function(e){
+        reject(e);
+      });
+      streams.read.on('error', function(e){
+        reject(e);
+      });
+    });
+  }
   var statistics = function(query){
     /**
       example....
@@ -314,7 +345,8 @@ var CSV = function(){
 
   return {
     query : executeQuery,
-    compare : compare
+    compare : compare,
+    base64 : base64
   }
 };
 
